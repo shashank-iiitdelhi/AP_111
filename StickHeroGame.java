@@ -7,6 +7,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.ImagePattern;
@@ -23,12 +24,23 @@ public class StickHeroGame extends Application {
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
 
+    private boolean isMousePressed = false;
+
+    private double barHeight = 0.0;
+
+    private double bridgelength = 0.0;
+
     private Pane root;
     private Canvas canvas;
     private GraphicsContext gc;
     private Player player;
     private List<Platform> platforms;
     private StartScreen startScreen;
+    private List<Bridge> bridges;
+    //private List<Cherries> cherries;
+    List<Cherries> cherriesList = new ArrayList<>();
+
+
 
     public static void main(String[] args) {
         launch(args);
@@ -59,6 +71,8 @@ public class StickHeroGame extends Application {
         startScreen = new StartScreen(() -> startGame());
         root.getChildren().add(startScreen);
 
+        bridges = new ArrayList<>();
+
         primaryStage.show();
     }
 
@@ -66,20 +80,116 @@ public class StickHeroGame extends Application {
         root.getChildren().remove(startScreen);
 
         platforms = generateRandomPlatforms(10);
+        //cherries = generateRandomCherries(5);
         Platform firstPlatform = platforms.get(0);
-        player = new Player(firstPlatform.getX() + firstPlatform.getWidth()-20, firstPlatform.getY()+10);
+        player = new Player(firstPlatform.getX() + firstPlatform.getWidth() - 20, firstPlatform.getY() + 10);
 
         new AnimationTimer() {
+            private static final double ROTATION_SPEED = 0.5; // Adjust this value to control rotation speed
+
             @Override
             public void handle(long now) {
                 gc.clearRect(0, 0, WIDTH, HEIGHT);
+//                for (Cherries cherries : cherries) {
+//                    cherries.render(gc);
+//                }
+                System.out.println("Total pillars:"+ platforms.size());
+                Random random = new Random();
+                for (int i=0; i<platforms.size()-1; i++) {
+                    //int cherries_Distance = random.nextInt((int)( platforms.get(i+1).getX() - platforms.get(i).getX())) ;
+                    //Cherries cherriesBridge = new Cherries(( platforms.get(i+1).getX() + cherries_Distance));
+                    //Cherries cherriesBridge = new Cherries(cherries_Distance);
+                    double startX = platforms.get(i).getX()+ platforms.get(i).getWidth();
+                    double endX = platforms.get(i+1).getX() ;
+                    int cherriesX = random.nextInt((int) (endX-startX));  // Adjust divisor for desired interval
+                    System.out.println("Start:"+startX+" End:"+endX);
+                    System.out.println("Coordinate:"+ cherriesX);
+                    System.out.println("-----------------------");
+                    Cherries cherriesBridge = new Cherries(startX + cherriesX);
+                    cherriesList.add(cherriesBridge);
 
-                for (Platform platform : platforms) {
-                    platform.render(gc);
+                    platforms.get(i).render(gc);
+//                    cherriesBridge.render(gc);
                 }
+//                for (int i = 0; i < bridges.size() - 1; i++) {
+//
+//                    double startX = bridges.get(i).getTopX();
+//                    double height = bridges.get(i).getHeight();
+//                    // Place cherries at equal intervals between bridges
+//                    for (int j = 0; j < 5; j++) {  // Adjust the number of cherries as needed
+//                        double cherriesX = startX + (height) * (j + 1) / 6.0;  // Adjust divisor for desired interval
+//                        Cherries cherriesBridge = new Cherries(cherriesX);
+//                        cherriesList.add(cherriesBridge);
+//                    }
+//                }
+
+// In your game loop
+                for (Cherries cherriesBridge : cherriesList) {
+                    cherriesBridge.render(gc);
+                }
+                for (Bridge bridge : bridges) {
+                    bridge.update(); // Update the bridge to control rotation speed
+                    bridge.render(gc);
+
+                    // Check if rotation is complete
+                    if (bridge.isRotationComplete()) {
+                        // Move the ninja across the bridge
+                        moveNinjaAcrossBridge(bridge);
+                    }
+                }
+
+                if (isMousePressed) {
+                    // Draw the extending bar dynamically
+                    drawDynamicBridge();
+                }
+
                 player.render(gc);
             }
+
+            private void moveNinjaAcrossBridge(Bridge bridge) {
+                double ninjaX = player.getX();
+                double ninjaY = player.getY();
+                // Check if the ninja is on the bridge
+                if (ninjaX <= (bridge.getTopX() + bridgelength)) {
+                    player.setX(ninjaX + ROTATION_SPEED);
+                }
+            }
+
         }.start();
+
+        Scene scene = canvas.getScene();
+        scene.setOnMousePressed(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                isMousePressed = true;
+            }
+        });
+
+        scene.setOnMouseReleased(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                isMousePressed = false;
+                saveBar();
+            }
+        });
+    }
+
+    private void saveBar() {
+        // Create a new Bridge with the current barHeight and add it to the bridges list
+        Bridge newBridge = new Bridge(player.getX(), barHeight, Color.BROWN);
+        bridges.add(newBridge);
+        bridgelength=barHeight;
+
+        // Set the angle of the new bridge
+        //newBridge.update();
+
+        barHeight = 0.0; // Reset the bar height after saving
+    }
+
+    private void drawDynamicBridge() {
+        // Draw the extending bar dynamically
+        barHeight += 5;
+        gc.setFill(Color.BROWN);
+        gc.fillRect(player.getX() - 5, HEIGHT - 10 - barHeight, 10, barHeight);
+
     }
 
     private List<Platform> generateRandomPlatforms(int count) {
@@ -95,6 +205,16 @@ public class StickHeroGame extends Application {
         }
 
         return platforms;
+    }
+    private List<Cherries> generateRandomCherries(int count){
+        List<Cherries> cherries = new ArrayList<>();
+        Random random= new Random();
+        int x = 200;
+        for (int i = 0; i < count; i++) {
+            x += random.nextInt(100) + 50;
+            cherries.add(new Cherries(x));
+        }
+        return cherries;
     }
 
     public class Player {
@@ -115,6 +235,18 @@ public class StickHeroGame extends Application {
             // Use ImagePattern to fill the player rectangle with the ninja image
             gc.setFill(new ImagePattern(ninjaImage));
             gc.fillRect(x - WIDTH / 2, y, WIDTH, HEIGHT);
+        }
+
+        public double getX() {
+            return x;
+        }
+
+        public void setX(double x) {
+            this.x = x;
+        }
+
+        public double getY() {
+            return y;
         }
     }
 
@@ -142,6 +274,69 @@ public class StickHeroGame extends Application {
 
         public double getY() {
             return HEIGHT - 10;
+        }
+    }
+
+    public static class Bridge {
+        private double x;
+        private double height;
+        private Color color;
+        private double angle; // New variable to store the rotation angle
+        private boolean rotationComplete;
+
+        public Bridge(double x, double height, Color color) {
+            this.x = x;
+            this.height = height;
+            this.color = color;
+            this.angle = 0.0;
+            this.rotationComplete = false;
+        }
+
+        public void render(GraphicsContext gc) {
+            // Save the current state of the graphics context
+            gc.save();
+
+            // Translate to the base of the bridge
+            gc.translate(x + 5, HEIGHT - 10);
+
+            // Rotate the graphics context
+            gc.rotate(angle);
+
+            // Fill the rectangle with the rotated graphics context
+            gc.setFill(color);
+            gc.fillRect(-5, -height, 10, height);
+
+            // Restore the graphics context to its original state
+            gc.restore();
+        }
+
+        public void update() {
+            // Increment the angle based on the rotation speed
+            if (!rotationComplete) {
+                angle += 0.5;
+            }
+
+            // Normalize the angle to keep it within bounds
+            if (angle >= 90.0) {
+                angle = 90.0;
+                rotationComplete = true;
+            }
+        }
+
+        public boolean isRotationComplete() {
+            return rotationComplete;
+        }
+
+        public double getTopX() {
+            return x + 5;
+        }
+
+        public double getTopY() {
+            return HEIGHT - 10 - height;
+        }
+
+        public double getHeight(){
+            return height;
         }
     }
 
@@ -178,4 +373,35 @@ public class StickHeroGame extends Application {
             getChildren().addAll(gameName, startButton);
         }
     }
+    public static class Cherries{
+        private static final int WIDTH = 20;
+        private static final int HEIGHT = 20;
+        private double cherryX;
+        private double cherryY = Player.HEIGHT;
+        private Image cherryImage = new Image("file:Cherry.png"); // Custom Ninja Model
+
+        public void render(GraphicsContext gc) {
+            // Use ImagePattern to fill the player rectangle with the ninja image
+            gc.setFill(new ImagePattern(cherryImage));
+            gc.fillRect(cherryX , cherryY, WIDTH, HEIGHT);
+        }
+
+        public double getX() {
+            return cherryX;
+        }
+
+        public void setX(double cherryX) {
+            this.cherryX = cherryX;
+        }
+
+        public double getY() {
+            return getY();
+        }
+
+        public Cherries(double cherryX) {
+            this.cherryX = cherryX;
+        }
+    }
 }
+
+
