@@ -38,16 +38,16 @@ public class StickHeroGame extends Application {
     private StartScreen startScreen;
     private List<Bridge> bridges;
     //private List<Cherries> cherries;
-    List<Cherries> cherriesList = new ArrayList<>();
-
-
-
+    int cherriesForBridges = 0;
+    List<Cherries> cherriesList;
     public static void main(String[] args) {
         launch(args);
     }
 
     @Override
     public void start(Stage primaryStage) {
+        Image icon = new Image("file:Ninja.png");
+        primaryStage.getIcons().add(icon);
         primaryStage.setTitle("Stick Hero Game");
         root = new Pane();
         Scene scene = new Scene(root, WIDTH, HEIGHT);
@@ -80,36 +80,33 @@ public class StickHeroGame extends Application {
         root.getChildren().remove(startScreen);
 
         platforms = generateRandomPlatforms(10);
-        //cherries = generateRandomCherries(5);
+        cherriesList = generateRandomCherries(platforms);
         Platform firstPlatform = platforms.get(0);
         player = new Player(firstPlatform.getX() + firstPlatform.getWidth() - 20, firstPlatform.getY() + 10);
 
         new AnimationTimer() {
             private static final double ROTATION_SPEED = 0.5; // Adjust this value to control rotation speed
 
+
             @Override
             public void handle(long now) {
                 gc.clearRect(0, 0, WIDTH, HEIGHT);
+                // In your AnimationTimer's handle method
+
 //                for (Cherries cherries : cherries) {
 //                    cherries.render(gc);
 //                }
-                System.out.println("Total pillars:"+ platforms.size());
-                Random random = new Random();
-                for (int i=0; i<platforms.size()-1; i++) {
-                    //int cherries_Distance = random.nextInt((int)( platforms.get(i+1).getX() - platforms.get(i).getX())) ;
-                    //Cherries cherriesBridge = new Cherries(( platforms.get(i+1).getX() + cherries_Distance));
-                    //Cherries cherriesBridge = new Cherries(cherries_Distance);
-                    double startX = platforms.get(i).getX()+ platforms.get(i).getWidth();
-                    double endX = platforms.get(i+1).getX() ;
-                    int cherriesX = random.nextInt((int) (endX-startX));  // Adjust divisor for desired interval
-                    System.out.println("Start:"+startX+" End:"+endX);
-                    System.out.println("Coordinate:"+ cherriesX);
-                    System.out.println("-----------------------");
-                    Cherries cherriesBridge = new Cherries(startX + cherriesX);
-                    cherriesList.add(cherriesBridge);
-
+                for (int i = 0; i < platforms.size() - 1; i++) {
+//                    double startX = platforms.get(i).getX() + platforms.get(i).getWidth();
+//                    double endX = platforms.get(i + 1).getX();
+//                    // Place one cherry between each pair of platforms
+//                    double cherryX = startX + (endX - startX) / 2;
+//                    cherryCounter++;
+//                    Cherries cherriesBridge = new Cherries(cherryX);
+//                    cherriesList.add(cherriesBridge);
+                    // Render the platform
                     platforms.get(i).render(gc);
-//                    cherriesBridge.render(gc);
+
                 }
 //                for (int i = 0; i < bridges.size() - 1; i++) {
 //
@@ -124,8 +121,9 @@ public class StickHeroGame extends Application {
 //                }
 
 // In your game loop
-                for (Cherries cherriesBridge : cherriesList) {
-                    cherriesBridge.render(gc);
+                for (int i = 0; i<cherriesList.size();i++) {
+                    System.out.println("Rendering cherry at X: " + cherriesList.get(i).getX());
+                    cherriesList.get(i).render(gc);
                 }
                 for (Bridge bridge : bridges) {
                     bridge.update(); // Update the bridge to control rotation speed
@@ -206,14 +204,18 @@ public class StickHeroGame extends Application {
 
         return platforms;
     }
-    private List<Cherries> generateRandomCherries(int count){
+    private List<Cherries> generateRandomCherries(List<Platform> platforms){
         List<Cherries> cherries = new ArrayList<>();
         Random random= new Random();
-        int x = 200;
-        for (int i = 0; i < count; i++) {
-            x += random.nextInt(100) + 50;
+        Random random1 = new Random();
+        boolean isCherries = random.nextBoolean();
+        if(isCherries && cherriesForBridges<platforms.size()-1) {
+            double startX = platforms.get(cherriesForBridges).getX()+ platforms.get(cherriesForBridges).getWidth();
+            double endX = platforms.get(cherriesForBridges+1).getX();
+            double x = random1.nextInt((int)(endX - startX)) ;
             cherries.add(new Cherries(x));
         }
+        cherriesForBridges++;
         return cherries;
     }
 
@@ -374,10 +376,10 @@ public class StickHeroGame extends Application {
         }
     }
     public static class Cherries{
-        private static final int WIDTH = 20;
-        private static final int HEIGHT = 20;
+        private static final int WIDTH = 30;
+        private static final int HEIGHT = 30;
         private double cherryX;
-        private double cherryY = Player.HEIGHT;
+        private double cherryY = 10;
         private Image cherryImage = new Image("file:Cherry.png"); // Custom Ninja Model
 
         public void render(GraphicsContext gc) {
@@ -403,5 +405,6 @@ public class StickHeroGame extends Application {
         }
     }
 }
+
 
 
