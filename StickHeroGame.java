@@ -179,6 +179,11 @@ public class StickHeroGame extends Application {
                         rotcomp=true;
                     }
 
+                    boolean cT = isCollisonTrue();
+                    if(player.isFlipped && cT){
+                        isGameOver = true;
+                    }
+
                     // Check if rotation is complete
                     if (rotcomp && bridge.b_no==bridge_no) {
                         // Move the ninja across the bridge
@@ -188,6 +193,7 @@ public class StickHeroGame extends Application {
 
                 if (isMousePressed) {
                     // Draw the extending bar dynamically
+
                     drawDynamicBridge();
                 }
                 player.render(gc);
@@ -196,6 +202,16 @@ public class StickHeroGame extends Application {
                     player.flip();
                     isspacebarpressed = false; // Reset the flag to prevent continuous flipping
                 }
+            }
+
+            public boolean isCollisonTrue(){
+                boolean isNinjaPlatformCollide = false;
+                for(int[] x:platformEnds){
+                    if(player.getX()>x[0] && player.getX()<x[1]){
+                        isNinjaPlatformCollide = true;
+                    }
+                }
+                return isNinjaPlatformCollide;
             }
 
             private void moveNinjaAcrossBridge(Bridge bridge) {
@@ -220,13 +236,14 @@ public class StickHeroGame extends Application {
                     if (!isOnPlatform) {
                         for (int[] platformRange : platformEnds) {
                             if (ninjaX > platformRange[1]) {
-                                lastplatformmiddle=(platformRange[1]+platformRange[0])/2;
+                                lastplatformmiddle= (double) (platformRange[1] + platformRange[0]) /2;
                             }
                             else{
                                 break;
                             }
                         }
                         isGameOver = true;
+
                     }
                 }
             }
@@ -370,7 +387,16 @@ public class StickHeroGame extends Application {
                 gc.scale(1, -1); // Flip vertically by scaling the Y-axis
                 gc.drawImage(ninjaImage, -WIDTH / 2, -60, WIDTH, HEIGHT);
                 gc.restore();
-            } else {
+            }
+//            if(isGameOver){
+//                gc.drawImage(ninjaImage,x - WIDTH / 2, y, WIDTH, HEIGHT);
+//                int animationDuration = 2000;
+//                Timeline timeline = new Timeline(
+//                        new KeyFrame(Duration.ZERO, new KeyValue(gc.getTransform().tyProperty(), y)),
+//                        new KeyFrame(Duration.millis(animationDuration), new KeyValue(gc.getTransform().tyProperty(), StickHeroGame.HEIGHT))
+//                );
+//            }
+            else {
                 gc.drawImage(ninjaImage, x - WIDTH / 2, y, WIDTH, HEIGHT);
             }
         }
@@ -385,6 +411,10 @@ public class StickHeroGame extends Application {
 
         public double getY() {
             return y;
+        }
+
+        public void setY(double y) {
+            this.y = y;
         }
 
         public void flip() {
@@ -595,3 +625,4 @@ public class StickHeroGame extends Application {
         }
     }
 }
+
